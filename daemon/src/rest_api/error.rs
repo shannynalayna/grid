@@ -90,6 +90,7 @@ impl fmt::Display for RestApiResponseError {
             }
             RestApiResponseError::NotFoundError(ref s) => write!(f, "Not Found Error: {}", s),
             RestApiResponseError::DatabaseError(ref s) => write!(f, "Database Error: {}", s),
+            RestApiResponseError::NotFoundError(ref s) => write!(f, "Not Found Error: {}", s),
         }
     }
 }
