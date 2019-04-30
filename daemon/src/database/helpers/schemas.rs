@@ -15,21 +15,20 @@
  * -----------------------------------------------------------------------------
  */
 
-use std::i64;
+use super::models::GridSchema;
+use super::schema::{grid_property_definition, grid_schema};
+use super::MAX_BLOCK_NUM;
 
-use super::models;
-use super::schema;
+use diesel::{pg::PgConnection, prelude::*, QueryResult};
 
-mod agents;
-mod blocks;
-mod grid_schemas;
-mod organizations;
-mod schemas;
-
-pub const MAX_BLOCK_NUM: i64 = i64::MAX;
-
-pub use agents::*;
-pub use blocks::*;
-pub use grid_schemas::*;
-pub use organizations::*;
-pub use schemas::*;
+pub fn list_grid_schemas(conn: &PgConnection) -> QueryResult<Vec<GridSchema>> {
+    grid_schema::table
+        .select(grid_schema::all_columns)
+        .filter(grid_schema::end_block_num.eq(MAX_BLOCK_NUM))
+        .left_join(
+            grid_property_definition::table.on(grid_property_definition::schema_name
+                .eq(grid_schema::name)
+                .and(grid_property_definition::end_block_num.eq(MAX_BLOCK_NUM))),
+        )
+        .load::<GridSchema>(conn)
+}
