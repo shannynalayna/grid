@@ -12,20 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::database::{helpers as db, models::GridSchema};
-use crate::rest_api::{error::RestApiResponseError, routes::DbExecutor, AppState};
+use crate::database::{
+    helpers as db,
+    models::{GridPropertyDefinition, GridSchema},
+};
+use crate::rest_api::{error::RestApiResponseError, routes::DbExecutor};
 
 use actix::{Handler, Message, SyncContext};
-use actix_web::{AsyncResponder, HttpRequest, HttpResponse, Path};
-use futures::Future;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GridSchemaSlice {
     pub name: String,
     pub description: String,
     pub owner: String,
-    pub property: GridSchemaProperty,
+    pub property: Vec<GridSchemaProperty>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,30 +36,33 @@ pub struct GridSchemaProperty {
     pub data_type: String,
     pub required: bool,
     pub description: String,
-    pub number_exponent: i32,
+    pub number_exponent: i64,
     pub enum_options: Vec<String>,
     pub struct_properties: Vec<String>,
 }
 
 impl GridSchemaSlice {
-    pub fn from_schema(schema: &GridSchema, property: &GridSchemaProperty) -> Self {
+    pub fn from_schema(schema: &GridSchema, property: Vec<GridPropertyDefinition>) -> Self {
         Self {
             name: schema.name.clone(),
             description: schema.description.clone(),
             owner: schema.owner.clone(),
-            property: GridSchemaProperty::from_property(property),
+            property: property
+                .iter()
+                .map(|prop| GridSchemaProperty::from(prop))
+                .collect::<Vec<GridSchemaProperty>>(),
         }
     }
 }
 
 impl GridSchemaProperty {
-    pub fn from_property(property: &GridSchemaProperty) -> Self {
+    pub fn from(property: &GridPropertyDefinition) -> Self {
         Self {
             name: property.name.clone(),
             data_type: property.data_type.clone(),
             required: property.required,
             description: property.description.clone(),
-            number_exponent: property.number_exponent.clone(),
+            number_exponent: property.number_exponent,
             enum_options: property.enum_options.clone(),
             struct_properties: property.struct_properties.clone(),
         }
@@ -74,67 +79,28 @@ impl Handler<ListGridSchemas> for DbExecutor {
     type Result = Result<Vec<GridSchemaSlice>, RestApiResponseError>;
 
     fn handle(&mut self, _msg: ListGridSchemas, _: &mut SyncContext<Self>) -> Self::Result {
+        let mut fetched_definitions =
+            db::list_grid_property_definitions(&*self.connection_pool.get()?)?
+                .into_iter()
+                .fold(HashMap::new(), |mut acc, def| {
+                    acc.entry(def.schema_name.to_string())
+                        .or_insert_with(|| vec![])
+                        .push(def);
+                    acc
+                });
+
         let fetched_schemas = db::list_grid_schemas(&*self.connection_pool.get()?)?
             .iter()
-            .map(|schema| GridSchemaSlice::from_schema(schema))
+            .map(|schema| {
+                GridSchemaSlice::from_schema(
+                    schema,
+                    fetched_definitions
+                        .remove(&schema.name)
+                        .unwrap_or_else(|| vec![]),
+                )
+            })
             .collect();
+
         Ok(fetched_schemas)
     }
-}
-
-pub fn list_grid_schemas(
-    req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = RestApiResponseError>> {
-    req.state()
-        .database_connection
-        .send(ListGridSchemas)
-        .from_err()
-        .and_then(move |res| match res {
-            Ok(schemas) => Ok(HttpResponse::Ok().json(schemas)),
-            Err(err) => Err(err),
-        })
-        .responder()
-}
-
-struct FetchGridSchema {
-    name: String,
-}
-
-impl Message for FetchGridSchema {
-    type Result = Result<GridSchemaSlice, RestApiResponseError>;
-}
-
-impl Handler<FetchGridSchema> for DbExecutor {
-    type Result = Result<GridSchemaSlice, RestApiResponseError>;
-
-    fn handle(&mut self, msg: FetchGridSchema, _: &mut SyncContext<Self>) -> Self::Result {
-        let fetched_schema = match db::fetch_grid_schema(&*self.connection_pool.get()?, &msg.name)?
-        {
-            Some(schema) => GridSchemaSlice::from_schema(&schema),
-            None => {
-                return Err(RestApiResponseError::NotFoundError(format!(
-                    "Could not find schema with name: {}",
-                    msg.name
-                )));
-            }
-        };
-
-        Ok(fetched_schema)
-    }
-}
-
-pub fn fetch_grid_schema(
-    req: HttpRequest<AppState>,
-    schema_name: Path<String>,
-) -> impl Future<Item = HttpResponse, Error = RestApiResponseError> {
-    req.state()
-        .database_connection
-        .send(FetchGridSchema {
-            name: schema_name.into_inner(),
-        })
-        .from_err()
-        .and_then(move |res| match res {
-            Ok(schema) => Ok(HttpResponse::Ok().json(schema)),
-            Err(err) => Err(err),
-        })
 }
