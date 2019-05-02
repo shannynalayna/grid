@@ -19,7 +19,7 @@ use super::models::GridSchema;
 use super::schema::{grid_property_definition, grid_schema};
 use super::MAX_BLOCK_NUM;
 
-use diesel::{pg::PgConnection, prelude::*, QueryResult};
+use diesel::{pg::PgConnection, prelude::*, result::Error::NotFound, QueryResult};
 
 pub fn list_grid_schemas(conn: &PgConnection) -> QueryResult<Vec<GridSchema>> {
     grid_schema::table
@@ -31,4 +31,22 @@ pub fn list_grid_schemas(conn: &PgConnection) -> QueryResult<Vec<GridSchema>> {
                 .and(grid_property_definition::end_block_num.eq(MAX_BLOCK_NUM))),
         )
         .load::<GridSchema>(conn)
+}
+
+pub fn fetch_grid_schema(conn: &PgConnection, name: &str) -> QueryResult<Option<GridSchema>> {
+    grid_schema::table
+        .select(grid_schema::all_columns)
+        .filter(
+            grid_schema::name
+                .eq(name)
+                .and(grid_schema::end_block_num.eq(MAX_BLOCK_NUM)),
+        )
+        .left_join(
+            grid_property_definition::table.on(grid_property_definition::schema_name
+                .eq(grid_schema::name)
+                .and(grid_property_definition::end_block_num.eq(MAX_BLOCK_NUM))),
+        )
+        .first(conn)
+        .map(Some)
+        .or_else(|err| if err == NotFound { Ok(None) } else { Err(err) })
 }
