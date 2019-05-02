@@ -41,11 +41,6 @@ pub fn fetch_grid_schema(conn: &PgConnection, name: &str) -> QueryResult<Option<
                 .eq(name)
                 .and(grid_schema::end_block_num.eq(MAX_BLOCK_NUM)),
         )
-        .left_join(
-            grid_property_definition::table.on(grid_property_definition::schema_name
-                .eq(grid_schema::name)
-                .and(grid_property_definition::end_block_num.eq(MAX_BLOCK_NUM))),
-        )
         .first(conn)
         .map(Some)
         .or_else(|err| if err == NotFound { Ok(None) } else { Err(err) })
