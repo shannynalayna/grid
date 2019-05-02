@@ -24,6 +24,7 @@ use diesel::{
     dsl::{insert_into, update},
     pg::PgConnection,
     prelude::*,
+    result::Error::NotFound,
     QueryResult,
 };
 
@@ -96,6 +97,33 @@ pub fn list_grid_property_definitions(
 ) -> QueryResult<Vec<GridPropertyDefinition>> {
     grid_property_definition::table
         .filter(grid_property_definition::end_block_num.eq(MAX_BLOCK_NUM))
+        .select(grid_property_definition::all_columns)
+        .load::<GridPropertyDefinition>(conn)
+}
+
+pub fn fetch_grid_schema(conn: &PgConnection, name: &str) -> QueryResult<Option<GridSchema>> {
+    grid_schema::table
+        .filter(
+            grid_schema::name
+                .eq(name)
+                .and(grid_schema::end_block_num.eq(MAX_BLOCK_NUM)),
+        )
+        .select(grid_schema::all_columns)
+        .first(conn)
+        .map(Some)
+        .or_else(|err| if err == NotFound { Ok(None) } else { Err(err) })
+}
+
+pub fn list_property_definitions_schema_name(
+    conn: &PgConnection,
+    schema_name: &str,
+) -> QueryResult<Vec<GridPropertyDefinition>> {
+    grid_property_definition::table
+        .filter(
+            grid_property_definition::schema_name
+                .eq(schema_name)
+                .and(grid_property_definition::end_block_num.eq(MAX_BLOCK_NUM)),
+        )
         .select(grid_property_definition::all_columns)
         .load::<GridPropertyDefinition>(conn)
 }
