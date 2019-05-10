@@ -103,6 +103,13 @@ fn run() -> Result<(), CliError> {
                 (about: "Update schemas from a yaml file")
                 (@arg path: +takes_value +required "Path to yaml file containing a list of schema definitions")
             )
+            (@subcommand list =>
+                (about: "List schemas")
+            )
+            (@subcommand show =>
+                (about: "Show a specific schema")
+                (@arg name: +takes_value +required "Name of the schema")
+            )
         )
     )
     .get_matches();
