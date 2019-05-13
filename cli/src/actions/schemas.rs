@@ -749,6 +749,30 @@ mod test {
         assert!(parse_value_as_i32(&Mapping::new(), &key).unwrap().is_none());
     }
 
+    ///
+    /// Verifies the do_list_schemas command returns a valid
+    ///     list of GridSchemaSlice structs.
+    ///
+    #[test]
+    fn test_do_list_schemas() {
+        let server = server! {
+        request: b"\
+            GET /text HTTP/1.1\r\n\
+            user-agent: $USERAGENT\r\n\
+            accept: */*\r\n\
+            accept-encoding: gzip\r\n\
+            host: $HOST\r\n\
+            \r\n\
+            ",
+        response: b"\
+            HTTP/1.1 200 OK\r\n\
+            Server: test\r\n\
+            Content-Length: 0\r\n\
+            \r\n\
+            "
+        };
+    }
+
     fn make_create_schema_payload_1() -> SchemaPayload {
         generate_create_schema_payload(
             "Lightbulb",
