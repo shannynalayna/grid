@@ -449,7 +449,7 @@ mod test {
               data_type: STRING
               description: "RGB value" "##;
 
-    static PHONE_YAML_EXAMPLE: &[u8; 630] = br##"
+    static PHONE_YAML_EXAMPLE: &[u8; 625] = br##"
 - name: "Phone"
   description: "Example phone schema"
   properties:
@@ -481,7 +481,7 @@ mod test {
                 File::create(test_yaml_file_path).expect("Error creating test schema yaml file.");
 
             file.write_all(LIGHTBULB_YAML_EXAMPLE)
-                .expect("Error writting example schema.");
+                .expect("Error writing example schema.");
 
             let payload =
                 parse_yaml(test_yaml_file_path, Action::SchemaCreate).expect("Error parsing yaml");
@@ -500,9 +500,9 @@ mod test {
             let mut file =
                 File::create(test_yaml_file_path).expect("Error creating test schema yaml file.");
             file.write(LIGHTBULB_YAML_EXAMPLE)
-                .expect("Error writting example schema.");
+                .expect("Error writing example schema.");
             file.write(PHONE_YAML_EXAMPLE)
-                .expect("Error writting example schema.");
+                .expect("Error writing example schema.");
 
             let payload =
                 parse_yaml(test_yaml_file_path, Action::SchemaCreate).expect("Error parsing yaml");
@@ -523,7 +523,7 @@ mod test {
                 File::create(test_yaml_file_path).expect("Error creating test schema yaml file.");
 
             file.write_all(LIGHTBULB_YAML_EXAMPLE)
-                .expect("Error writting example schema.");
+                .expect("Error writing example schema.");
 
             let payload =
                 parse_yaml(test_yaml_file_path, Action::SchemaUpdate).expect("Error parsing yaml");
@@ -542,9 +542,9 @@ mod test {
             let mut file =
                 File::create(test_yaml_file_path).expect("Error creating test schema yaml file.");
             file.write(LIGHTBULB_YAML_EXAMPLE)
-                .expect("Error writting example schema.");
+                .expect("Error writing example schema.");
             file.write(PHONE_YAML_EXAMPLE)
-                .expect("Error writting example schema.");
+                .expect("Error writing example schema.");
 
             let payload =
                 parse_yaml(test_yaml_file_path, Action::SchemaUpdate).expect("Error parsing yaml");
@@ -669,7 +669,7 @@ mod test {
     }
 
     ///
-    /// Verifies parse_parse_value_as_i32 can parse Values as i32 for valid inputs
+    /// Verifies parse_value_as_i32 can parse Values as i32 for valid inputs
     ///  and returns an error for invalid inputs
     ///
     #[test]
