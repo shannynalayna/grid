@@ -31,6 +31,8 @@ mod splinter;
 mod transaction;
 mod yaml_parser;
 
+use std::env;
+
 use clap::ArgMatches;
 use flexi_logger::{LogSpecBuilder, Logger};
 use grid_sdk::protocol::pike::{
@@ -50,6 +52,9 @@ use actions::admin;
 
 const APP_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const KEY_FILE_BASE: &str = "KEY_FILE_BASE";
+const ENDPOINT: &str = "ENDPOINT";
 
 fn run() -> Result<(), CliError> {
     #[allow(unused_mut)]
@@ -227,9 +232,16 @@ fn run() -> Result<(), CliError> {
 
     Logger::with(log_spec_builder.build()).start()?;
 
-    let url = matches.value_of("url").unwrap_or("http://localhost:8000");
+    let url = matches
+        .value_of("url")
+        .map(String::from)
+        .or_else(|| env::var(ENDPOINT).ok())
+        .unwrap_or_else(|| String::from("http://localhost:8000"));
 
-    let key = matches.value_of("key").map(ToString::to_string);
+    let key = matches
+        .value_of("key")
+        .map(String::from)
+        .or_else(|| env::var(KEY_FILE_BASE).ok());
 
     let wait = value_t!(matches, "wait", u64).unwrap_or(0);
 
