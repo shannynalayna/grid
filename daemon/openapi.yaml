@@ -422,6 +422,60 @@ paths:
             $ref: "#/components/responses/500ServerError"
           "503":
             $ref: "#/components/responses/503ServiceUnavailable"
+  /product:
+    get:
+      tags:
+        - Product
+      summary: List all products
+      description: "Get a list of products"
+      operationId: list_products
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+  "/product/{product_id}":
+    get:
+      tags:
+        - Product
+      summary: Fetch a specific product
+      description: Fetches a single product with the given product ID
+      operationId: fetch_product
+      parameters:
+        - name: product_id
+          in: path
+          description: ID of the property to fetch.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+
 components:
   parameters:
     batch_id:
@@ -850,3 +904,25 @@ components:
       type: string
       format: byte
       example: "AQIDBA=="
+    ProductNamespaceEnum:
+      description: Namespace of a product
+      type: string
+      enum:
+        - UNSET_NAMESPACE
+        - GS1
+    Product:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: 00122765988220
+        product_address:
+          type: string
+          example: 621dee0201000000000000000000000000000000000000000000000012276598822000
+        product_namespace:
+          $ref: "#/components/schemas/ProductNamespaceEnum"
+        owner:
+          type: string
+          example: 02cd3181dbd7d1539f470436ce222c53ab5e514f67809dc0095895e6cdfba97612
+        properties:
+          $ref: "#/components/schemas/StructPropertyValue"
