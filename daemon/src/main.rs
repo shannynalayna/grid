@@ -224,8 +224,17 @@ fn run_splinter(config: GridConfig, connection_pool: ConnectionPool) -> Result<(
         })
         .and_then(|res| res.map_err(DaemonError::from))?;
 
-    if let Err(err) = reactor.shutdown() {
-        error!("unable to shutdown splinter event reactor: {}", err)
+    let reactor_shutdown_signaler = reactor.shutdown_signaler();
+
+    if let Err(err) = reactor_shutdown_signaler.signal_shutdown() {
+        error!(
+            "Unable to signal shutdown to splinter event reactor: {}",
+            err
+        );
+    }
+
+    if let Err(err) = reactor.wait_for_shutdown() {
+        error!("unable to shutdown splinter event reactor: {}", err);
     }
 
     Ok(())
